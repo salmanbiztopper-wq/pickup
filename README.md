@@ -1,5 +1,7 @@
 # Pickup
 
+**Website:** [salmanbiztopper-wq.github.io/pickup](https://salmanbiztopper-wq.github.io/pickup/)
+
 **Install once, keep working as usual, and Claude never loses its place.**
 
 Pickup is a plugin for Claude Code. It keeps one plain-English page about your project, called `PICKUP.md`, and makes sure Claude reads it whenever it might have forgotten something. You never have to remember to save. If you ever want to check what Claude knows, the whole story is on one page.

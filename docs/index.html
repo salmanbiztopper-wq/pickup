@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pickup for Claude Code</title>
+<meta name="description" content="Pickup is a Claude Code plugin that keeps a plain-English project notebook, PICKUP.md, and loads it back after compaction and in every new chat.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;800&display=swap">
+<style>
+/* Layout: neon-brutalist slabs. Thick ink borders, hard offset shadows, flat neon fills, one tilted notebook card as the hero object. */
+:root {
+  --bg: #f1efff;
+  --paper: #ffffff;
+  --ink: #0b0a12;
+  --muted: #4b4562;
+  --lime: #c6ff3d;
+  --pink: #ff3ec9;
+  --cyan: #38f2ff;
+  --violet: #8a6bff;
+  --on-neon: #0b0a12;
+  --grid: rgba(11, 10, 18, .07);
+  --f-display: "Archivo", "Arial Black", Impact, sans-serif;
+  --f-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --b: 3px;
+  --sh: 6px 6px 0 var(--ink);
+  --sh-sm: 4px 4px 0 var(--ink);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e0c17; --paper: #191626; --ink: #f1efff; --muted: #b3acd0;
+    --grid: rgba(241, 239, 255, .06); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e0c17; --paper: #191626; --ink: #f1efff; --muted: #b3acd0;
+  --grid: rgba(241, 239, 255, .06); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--ink);
+  font: 400 17px/1.6 var(--f-body);
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
+
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* ---------- header ---------- */
+header.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); border-bottom: var(--b) solid var(--ink);
+}
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; flex-wrap: wrap; }
+.logo { display: flex; align-items: center; gap: 10px; font: 900 22px/1 var(--f-display); font-stretch: 125%; text-decoration: none; letter-spacing: -.02em; }
+.logo-mark { width: 34px; height: 34px; display: grid; place-items: center; background: var(--lime); color: var(--on-neon); border: var(--b) solid var(--ink); box-shadow: 3px 3px 0 var(--ink); font-size: 18px; transform: rotate(-6deg); }
+nav.tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.tab {
+  font: 800 13px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .08em;
+  padding: 10px 14px; border: var(--b) solid var(--ink); background: var(--paper); color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink); cursor: pointer; transition: transform .08s, box-shadow .08s;
+}
+.tab:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.tab:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+.tab[aria-current="page"] { background: var(--lime); color: var(--on-neon); }
+
+/* ---------- shared ---------- */
+section { padding-block: 72px; }
+.eyebrow { font: 800 12px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .14em; display: inline-block; padding: 7px 10px; border: var(--b) solid var(--ink); background: var(--cyan); color: var(--on-neon); }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -.02em; }
+h2 { font-size: clamp(34px, 5.4vw, 64px); font-weight: 900; font-stretch: 118%; line-height: .95; text-transform: uppercase; }
+h3 { font-size: 22px; font-weight: 800; font-stretch: 105%; line-height: 1.15; }
+.lead { font-size: 19px; color: var(--muted); max-width: 60ch; }
+.sec-head { display: grid; gap: 18px; margin-bottom: 40px; }
+.slab { background: var(--paper); border: var(--b) solid var(--ink); box-shadow: var(--sh); }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer;
+  font: 800 15px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em;
+  padding: 15px 20px; border: var(--b) solid var(--ink); box-shadow: var(--sh-sm);
+  background: var(--pink); color: var(--on-neon); transition: transform .08s, box-shadow .08s;
+}
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+.btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+.btn.lime { background: var(--lime); }
+.btn.cyan { background: var(--cyan); }
+.btn.ghost { background: var(--paper); color: var(--ink); }
+code, .mono { font-family: var(--f-mono); }
+:not(pre) > code { font-size: .88em; padding: 1px 6px; border: 2px solid var(--ink); background: var(--bg); }
+
+/* ---------- hero ---------- */
+.hero .wrap { display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center; }
+.hero h1 { font-size: clamp(46px, 8.4vw, 112px); font-weight: 900; font-stretch: 125%; line-height: .86; text-transform: uppercase; margin-block: 22px; }
+.hero h1 .hl { background: var(--pink); color: var(--on-neon); padding: 0 .08em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.hero h1 .ul { text-decoration: underline; text-decoration-color: var(--lime); text-decoration-thickness: .14em; text-underline-offset: .06em; }
+.hero-copy { min-width: 0; display: grid; gap: 26px; justify-items: start; }
+.install { width: 100%; display: grid; gap: 0; }
+.install-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border: var(--b) solid var(--ink); border-bottom: 0; background: var(--ink); color: var(--bg); font: 700 12px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .12em; }
+.dots { display: flex; gap: 6px; }
+.dots i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--bg); }
+.dots i:nth-child(1) { background: var(--pink); } .dots i:nth-child(2) { background: var(--lime); } .dots i:nth-child(3) { background: var(--cyan); }
+.cmd { display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--paper); border: var(--b) solid var(--ink); border-top-width: 0; min-width: 0; }
+.cmd:first-of-type { border-top-width: var(--b); }
+.install .cmd:last-child { box-shadow: var(--sh); }
+.cmd .p { color: var(--pink); font: 800 15px var(--f-mono); }
+.cmd code { flex: 1; min-width: 0; white-space: normal; overflow-wrap: anywhere; font: 600 15px/1.4 var(--f-mono); border: 0; padding: 0; background: none; }
+.copy { flex: none; font: 800 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .08em; padding: 8px 10px; border: 2px solid var(--ink); background: var(--lime); color: var(--on-neon); cursor: pointer; }
+.copy.done { background: var(--cyan); }
+
+.notebook { transform: rotate(2.2deg); min-width: 0; position: relative; }
+.notebook .slab { box-shadow: 12px 12px 0 var(--ink); }
+.nb-tab { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 16px; background: var(--cyan); color: var(--on-neon); border-bottom: var(--b) solid var(--ink); font: 800 14px/1 var(--f-mono); }
+.nb-tab span:last-child { font-weight: 600; font-size: 12px; }
+.nb-body { padding: 20px 22px 24px; font: 400 14px/1.6 var(--f-mono); overflow-x: auto; }
+.nb-body .h1 { font-weight: 800; font-size: 17px; }
+.nb-body .h2 { font-weight: 800; color: var(--violet); margin-top: 12px; }
+.nb-body .dim { color: var(--muted); }
+.nb-body .done { text-decoration: line-through; text-decoration-color: var(--pink); text-decoration-thickness: 2px; }
+.sticker {
+  position: absolute; top: -26px; left: -22px; transform: rotate(-12deg);
+  background: var(--lime); color: var(--on-neon); border: var(--b) solid var(--ink); box-shadow: var(--sh-sm);
+  font: 900 13px/1.1 var(--f-display); font-stretch: 120%; text-transform: uppercase; padding: 10px 12px; text-align: center;
+}
+
+/* ---------- marquee ---------- */
+.marquee { border-block: var(--b) solid var(--ink); background: var(--violet); color: var(--on-neon); overflow: hidden; }
+.marquee-track { display: flex; gap: 38px; width: max-content; padding-block: 14px; animation: slide 32s linear infinite; font: 900 20px/1 var(--f-display); font-stretch: 125%; text-transform: uppercase; }
+.marquee-track span::after { content: "✦"; margin-left: 38px; }
+@keyframes slide { to { transform: translateX(-50%); } }
+
+/* ---------- desk compare ---------- */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.compare .slab { padding: 28px; display: grid; gap: 16px; align-content: start; }
+.compare .bad { background: var(--paper); }
+.compare .good { background: var(--lime); color: var(--on-neon); }
+.compare .good .tag { background: var(--paper); color: var(--ink); }
+.tag { justify-self: start; font: 800 12px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; padding: 6px 9px; border: 2px solid currentColor; }
+.compare ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.compare li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; }
+.compare li b { font-family: var(--f-mono); }
+
+/* ---------- steps ---------- */
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; counter-reset: s; }
+.step { padding: 24px; display: grid; gap: 12px; align-content: start; }
+.step::before { counter-increment: s; content: counter(s); font: 900 46px/1 var(--f-display); font-stretch: 125%; width: 64px; height: 64px; display: grid; place-items: center; border: var(--b) solid var(--ink); background: var(--pink); color: var(--on-neon); }
+.step:nth-child(2)::before { background: var(--cyan); }
+.step:nth-child(3)::before { background: var(--lime); }
+.step:nth-child(4)::before { background: var(--violet); }
+.step p { margin: 0; color: var(--muted); }
+
+/* ---------- commands ---------- */
+.cmds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.cmd-card { padding: 0; display: grid; }
+.cmd-card .top-bar { padding: 14px 18px; border-bottom: var(--b) solid var(--ink); font: 800 17px/1.2 var(--f-mono); color: var(--on-neon); overflow-x: auto; }
+.cmd-card:nth-child(1) .top-bar { background: var(--lime); }
+.cmd-card:nth-child(2) .top-bar { background: var(--cyan); }
+.cmd-card:nth-child(3) .top-bar { background: var(--pink); }
+.cmd-card .inner { padding: 18px; display: grid; gap: 10px; }
+.cmd-card p { margin: 0; }
+.say { font: 600 14px/1.5 var(--f-mono); color: var(--muted); }
+
+/* ---------- any project ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: 14px; }
+.chip { font: 900 clamp(20px, 3vw, 30px)/1 var(--f-display); font-stretch: 120%; text-transform: uppercase; padding: 14px 18px; border: var(--b) solid var(--ink); background: var(--paper); box-shadow: var(--sh-sm); }
+.chip:nth-child(odd) { transform: rotate(-1.5deg); }
+.chip:nth-child(even) { transform: rotate(1.5deg); }
+.chip:nth-child(3n+1):hover { background: var(--lime); color: var(--on-neon); }
+.chip:nth-child(3n+2):hover { background: var(--pink); color: var(--on-neon); }
+.chip:nth-child(3n):hover { background: var(--cyan); color: var(--on-neon); }
+
+/* ---------- faq ---------- */
+.faq { display: grid; gap: 16px; max-width: 860px; }
+.faq details { background: var(--paper); border: var(--b) solid var(--ink); box-shadow: var(--sh-sm); }
+.faq summary { cursor: pointer; list-style: none; padding: 18px 20px; font: 800 19px/1.3 var(--f-display); display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font: 900 26px/1 var(--f-mono); flex: none; }
+.faq details[open] summary { background: var(--cyan); color: var(--on-neon); border-bottom: var(--b) solid var(--ink); }
+.faq details[open] summary::after { content: "–"; }
+.faq .a { padding: 16px 20px 20px; color: var(--muted); }
+.faq .a p { margin: 0; }
+
+/* ---------- cta band ---------- */
+.band { background: var(--pink); color: var(--on-neon); border-block: var(--b) solid var(--ink); }
+.band .wrap { display: flex; flex-wrap: wrap; gap: 28px; align-items: center; justify-content: space-between; padding-block: 56px; }
+.band h2 { max-width: 14ch; }
+.band .btn { background: var(--lime); }
+
+/* ---------- blog ---------- */
+.posts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.post-card { display: grid; grid-template-rows: auto 1fr; text-align: left; cursor: pointer; font: inherit; color: inherit; padding: 0; transition: transform .1s, box-shadow .1s; }
+.post-card:hover { transform: translate(-3px, -3px); box-shadow: 9px 9px 0 var(--ink); }
+.post-art { height: 150px; border-bottom: var(--b) solid var(--ink); display: grid; place-items: center; font: 900 54px/1 var(--f-display); font-stretch: 125%; color: var(--on-neon); overflow: hidden; }
+.post-card:nth-child(1) .post-art { background: var(--lime); }
+.post-card:nth-child(2) .post-art { background: var(--cyan); }
+.post-card:nth-child(3) .post-art { background: var(--pink); }
+.post-meta { font: 700 12px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.post-inner { padding: 20px; display: grid; gap: 12px; align-content: start; }
+.post-inner p { margin: 0; color: var(--muted); }
+.read { font: 800 13px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .08em; }
+.article { max-width: 760px; padding: clamp(22px, 4vw, 44px); display: grid; gap: 18px; }
+.article h2 { font-size: clamp(32px, 5vw, 54px); }
+.article h3 { margin-top: 10px; }
+.article p, .article li { max-width: 65ch; }
+.article p { margin: 0; }
+.article ul, .article ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+.article pre { margin: 0; padding: 16px; background: var(--ink); color: var(--bg); border: var(--b) solid var(--ink); overflow-x: auto; font: 500 14px/1.55 var(--f-mono); }
+.back { justify-self: start; }
+
+/* ---------- contact ---------- */
+.contact-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 28px; align-items: start; }
+form.slab { padding: 28px; display: grid; gap: 18px; min-width: 0; }
+.field { display: grid; gap: 8px; }
+label { font: 800 13px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; }
+input, select, textarea {
+  font: 500 16px/1.4 var(--f-body); color: var(--ink); background: var(--bg);
+  border: var(--b) solid var(--ink); padding: 12px 14px; width: 100%; border-radius: 0;
+}
+input:focus, select:focus, textarea:focus { outline: none; box-shadow: 4px 4px 0 var(--pink); }
+textarea { min-height: 150px; resize: vertical; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.hint { font-size: 14px; color: var(--muted); margin: 0; }
+.status { font: 700 14px/1.4 var(--f-mono); min-height: 1.4em; margin: 0; }
+.side { display: grid; gap: 22px; }
+.report { padding: 22px; display: grid; gap: 12px; }
+.report.bug { background: var(--pink); color: var(--on-neon); }
+.report.feat { background: var(--lime); color: var(--on-neon); }
+.report p { margin: 0; }
+.report .btn { background: var(--paper); color: var(--ink); justify-self: start; }
+.report ul { margin: 0; padding-left: 20px; font-size: 15px; }
+.who { padding: 22px; display: grid; gap: 8px; }
+.who p { margin: 0; color: var(--muted); }
+
+footer { border-top: var(--b) solid var(--ink); background: var(--paper); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: space-between; padding-block: 26px; font: 600 13px/1.5 var(--f-mono); }
+footer a { text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 960px) {
+  .hero .wrap, .contact-grid { grid-template-columns: 1fr; }
+  .notebook { margin: 30px 10px 10px 18px; }
+  .steps { grid-template-columns: repeat(2, 1fr); }
+  .cmds, .posts { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  section { padding-block: 52px; }
+  .compare, .steps, .row2 { grid-template-columns: 1fr; }
+  .logo { font-size: 19px; }
+  .tab { padding: 9px 10px; font-size: 12px; }
+  .notebook { transform: rotate(1deg); }
+  .notebook .slab { box-shadow: 7px 7px 0 var(--ink); }
+  /* Phones: let the two-row header scroll away instead of covering the page. */
+  header.top { position: static; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#home" data-go="home"><span class="logo-mark">P</span>PICKUP</a>
+    <nav class="tabs" aria-label="Pages">
+      <button class="tab" type="button" data-go="home">Home</button>
+      <button class="tab" type="button" data-go="blog">Blog</button>
+      <button class="tab" type="button" data-go="contact">Contact</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+<!-- ================= HOME ================= -->
+<div id="view-home" data-view="home">
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-copy">
+        <span class="eyebrow">A plugin for Claude Code</span>
+        <h1>Claude <span class="hl">never</span> loses its <span class="ul">place.</span></h1>
+        <p class="lead">Pickup keeps one plain-English page about your project, called <code>PICKUP.md</code>. Claude reads it back after compaction and at the start of every new chat. You never have to remember to save.</p>
+        <div class="install" aria-label="Install commands">
+          <div class="install-head"><span>Type these in Claude Code</span><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+          <div class="cmd"><span class="p">›</span><code>/plugin marketplace add salmanbiztopper-wq/pickup</code><button class="copy" type="button">Copy</button></div>
+          <div class="cmd"><span class="p">›</span><code>/plugin install pickup@pickup</code><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap">
+          <a class="btn" href="https://github.com/salmanbiztopper-wq/pickup" target="_blank" rel="noopener">View on GitHub ↗</a>
+          <button class="btn ghost" type="button" data-go="blog">Read the guide</button>
+        </div>
+      </div>
+
+      <div class="notebook" aria-label="Example PICKUP.md notebook">
+        <div class="sticker">Example<br>notebook</div>
+        <div class="slab">
+          <div class="nb-tab"><span>PICKUP.md</span><span>auto-saved</span></div>
+          <div class="nb-body">
+            <div class="h1"># Where this project stands</div>
+            <div class="dim">Last updated: 2026-10-16 17:45</div>
+            <div class="h2">## What we're building</div>
+            <div>A one-page website for Rosa's Bakery, with a menu and an order form.</div>
+            <div class="h2">## The plan</div>
+            <div class="done">- [x] Home page with the bakery's story</div>
+            <div class="done">- [x] Menu section with photos</div>
+            <div>- [ ] Order form that sends an email</div>
+            <div>- [ ] Publish the site</div>
+            <div class="h2">## Next step</div>
+            <div>Build the order form.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>Session start</span><span>Your message</span><span>Before an edit</span><span>After an edit</span><span>End of reply</span><span>Before compaction</span><span>Session end</span>
+      <span>Session start</span><span>Your message</span><span>Before an edit</span><span>After an edit</span><span>End of reply</span><span>Before compaction</span><span>Session end</span>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow" style="background:var(--lime)">The problem</span>
+        <h2>Claude's desk fills up.</h2>
+        <p class="lead">Everything in your chat sits on Claude's desk. In a long session the desk gets full, so Claude Code clears it and leaves a short note. That's called compaction. The note is short, so details get lost. A new chat has your <code>CLAUDE.md</code>, auto memory and <code>/resume</code>, but none of them reliably keeps where the project stands.</p>
+      </div>
+      <div class="compare">
+        <div class="slab bad">
+          <span class="tag">Without Pickup</span>
+          <h3>Claude starts guessing.</h3>
+          <ul>
+            <li><b>✕</b><span>Decisions you agreed on can get lost.</span></li>
+            <li><b>✕</b><span>Fixes that already failed can get tried again.</span></li>
+            <li><b>✕</b><span>Your exact words can turn into a vague summary.</span></li>
+            <li><b>✕</b><span>A new chat may not know what's done or what's next.</span></li>
+          </ul>
+        </div>
+        <div class="slab good">
+          <span class="tag">With Pickup</span>
+          <h3>The notebook goes back on the desk.</h3>
+          <ul>
+            <li><b>✓</b><span>The plan, decisions and their reasons are written down.</span></li>
+            <li><b>✓</b><span>Your latest requests are kept word for word.</span></li>
+            <li><b>✓</b><span>After compaction, Claude reads the notebook again.</span></li>
+            <li><b>✓</b><span>A new chat opens with where you left off.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow" style="background:var(--pink)">How it works</span>
+        <h2>Install once. Work as usual.</h2>
+      </div>
+      <div class="steps">
+        <div class="slab step"><h3>Open your project folder</h3><p>Start a chat in the folder where your project lives. Each folder gets its own notebook.</p></div>
+        <div class="slab step"><h3>Do some real work</h3><p>After a few edits, <code>PICKUP.md</code> appears in the folder. Claude keeps it current as you go.</p></div>
+        <div class="slab step"><h3>The desk gets cleared</h3><p>Compaction happens, or you close the chat and come back tomorrow.</p></div>
+        <div class="slab step"><h3>Claude picks up</h3><p>Pickup loads the notebook, and Claude opens with one line on where things stand.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Three commands</span>
+        <h2>Or just say it.</h2>
+        <p class="lead">You rarely need these. They're there when you want to check in or start fresh. Plain words work too.</p>
+      </div>
+      <div class="cmds">
+        <div class="slab cmd-card"><div class="top-bar">/pickup:save</div><div class="inner"><p>Updates the notebook right now and tells you the next step.</p><p class="say">or say: "save progress"</p></div></div>
+        <div class="slab cmd-card"><div class="top-bar">/pickup:status</div><div class="inner"><p>Tells you in plain English where the project stands. It never changes the file.</p><p class="say">or say: "where are we?"</p></div></div>
+        <div class="slab cmd-card"><div class="top-bar">/pickup:handoff</div><div class="inner"><p>Gets the notebook fully ready for a fresh start. Then open a new chat in the same folder, or type <code>/clear</code>.</p><p class="say">or say: "let's start fresh"</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow" style="background:var(--violet)">Any kind of project</span>
+        <h2>Not just code.</h2>
+      </div>
+      <div class="chips">
+        <span class="chip">A website</span><span class="chip">An app</span><span class="chip">A design</span><span class="chip">A book</span><span class="chip">A research report</span>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow" style="background:var(--lime)">Questions</span>
+        <h2>Good to know.</h2>
+      </div>
+      <div class="faq">
+        <details><summary>What does Pickup write into my project?</summary><div class="a"><p>Only one file: <code>PICKUP.md</code>. Its raw activity log lives in the plugin's private data folder, never in your project.</p></div></details>
+        <details><summary>Does it send my work anywhere?</summary><div class="a"><p>No. Pickup itself makes no network calls, and there are no accounts and no cloud. Its log stays on your computer. The notebook is read into your Claude chat, the same way Claude reads any other file in your project.</p></div></details>
+        <details><summary>Do I need Node or Python?</summary><div class="a"><p>No. It uses plain <code>sh</code> and <code>awk</code>, so it runs on Mac and Linux. On Windows it needs <a href="https://git-scm.com/downloads/win" target="_blank" rel="noopener">Git for Windows</a>, which most Claude Code users already have.</p></div></details>
+        <details><summary>Can I edit the notebook myself?</summary><div class="a"><p>Yes. If you edit <code>PICKUP.md</code> by hand, Claude follows your version. Leave the block between the <code>pickup:facts</code> markers alone, because Pickup fills that part.</p></div></details>
+        <details><summary>How do I turn it off for one project?</summary><div class="a"><p>Create an empty file named <code>.pickup-off</code> in that project's folder. Pickup stays quiet there.</p></div></details>
+        <details><summary>Can I change how often it saves?</summary><div class="a"><p>Yes. Set <code>PICKUP_SAVE_AFTER_EDITS</code> to the number of edits between reminders. The default is 6, and 0 turns the reminders off. Add it to your Claude Code settings file (<code>~/.claude/settings.json</code>) under <code>"env"</code>.</p></div></details>
+      </div>
+    </div>
+  </section>
+
+  <div class="band">
+    <div class="wrap">
+      <h2>Stop re-explaining your project.</h2>
+      <button class="btn" type="button" data-go="home">Get the two install commands</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= BLOG ================= -->
+<div id="view-blog" data-view="blog" hidden>
+  <section>
+    <div class="wrap">
+      <div id="blog-list">
+        <div class="sec-head">
+          <span class="eyebrow">Blog</span>
+          <h2>Notes from the notebook.</h2>
+          <p class="lead">Short guides on how Pickup works and how to get the most out of it.</p>
+        </div>
+        <div class="posts">
+          <button class="slab post-card" type="button" data-post="desk">
+            <div class="post-art">DESK</div>
+            <div class="post-inner"><span class="post-meta">3 min read</span><h3>Why Claude loses its place, and how a notebook fixes it</h3><p>Compaction explained without jargon, and what gets lost when it happens.</p><span class="read">Read →</span></div>
+          </button>
+          <button class="slab post-card" type="button" data-post="start">
+            <div class="post-art">START</div>
+            <div class="post-inner"><span class="post-meta">2 min read</span><h3>Getting started in five minutes</h3><p>Install Pickup, open your project folder, and see your first notebook appear.</p><span class="read">Read →</span></div>
+          </button>
+          <button class="slab post-card" type="button" data-post="inside">
+            <div class="post-art">.MD</div>
+            <div class="post-inner"><span class="post-meta">3 min read</span><h3>What goes inside PICKUP.md</h3><p>A tour of each section, and which parts you can edit by hand.</p><span class="read">Read →</span></div>
+          </button>
+        </div>
+      </div>
+      <div id="blog-post" hidden></div>
+    </div>
+  </section>
+</div>
+
+<!-- ================= CONTACT ================= -->
+<div id="view-contact" data-view="contact" hidden>
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow" style="background:var(--pink)">Contact</span>
+        <h2>Say hello.</h2>
+        <p class="lead">Questions, ideas or feedback about Pickup. Messages go through the project's GitHub page, so you'll need a free GitHub account.</p>
+      </div>
+      <div class="contact-grid">
+        <form class="slab" id="contact-form" novalidate>
+          <div class="row2">
+            <div class="field"><label for="c-name">Your name</label><input id="c-name" name="name" autocomplete="name" placeholder="Rosa Martinez"></div>
+            <div class="field"><label for="c-topic">Topic</label>
+              <select id="c-topic" name="topic">
+                <option>General question</option>
+                <option>Feedback</option>
+                <option>Help getting started</option>
+                <option>Partnership</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label for="c-msg">Message</label><textarea id="c-msg" name="message" placeholder="Hi! I started using Pickup on my bakery website and…"></textarea></div>
+          <div class="form-actions">
+            <a class="btn" id="c-send" href="#" target="_blank" rel="noopener">Send on GitHub ↗</a>
+            <button class="btn ghost" type="button" id="c-copy">Copy message</button>
+          </div>
+          <p class="status" id="c-status" role="status"></p>
+          <p class="hint">"Send on GitHub" opens a new message with your text filled in. Press Submit there to send it.</p>
+        </form>
+
+        <div class="side">
+          <div class="slab report bug">
+            <span class="tag">Report a bug</span>
+            <h3>Something broke?</h3>
+            <p>Tell us what happened and what you expected. These help us fix it fast:</p>
+            <ul><li>Your system (Mac, Windows, Linux)</li><li>Your Claude Code version</li><li>Steps to make it happen again</li></ul>
+            <a class="btn" id="bug-link" href="#" target="_blank" rel="noopener">Report a bug ↗</a>
+          </div>
+          <div class="slab report feat">
+            <span class="tag">Request a feature</span>
+            <h3>Got an idea?</h3>
+            <p>Describe what you'd like Pickup to do and why it would help your work.</p>
+            <a class="btn" id="feat-link" href="#" target="_blank" rel="noopener">Request a feature ↗</a>
+          </div>
+          <div class="slab who">
+            <h3>Made by Salman Islam</h3>
+            <p>Pickup is open source under the MIT license.</p>
+            <a href="https://github.com/salmanbiztopper-wq" target="_blank" rel="noopener" class="mono">github.com/salmanbiztopper-wq ↗</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>PICKUP v1.0.1 · MIT license</span>
+    <span><a href="https://github.com/salmanbiztopper-wq/pickup" target="_blank" rel="noopener">GitHub</a> · <a href="#blog" data-go="blog">Blog</a> · <a href="#contact" data-go="contact">Contact</a></span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var REPO = "https://github.com/salmanbiztopper-wq/pickup";
+  var VIEWS = ["home", "blog", "contact"];
+
+  var POSTS = {
+    desk: {
+      meta: "3 min read",
+      title: "Why Claude loses its place, and how a notebook fixes it",
+      html:
+        "<p>Think of Claude's memory as a desk. Everything from your chat goes on it: what you asked for, what Claude tried, what you decided, what broke.</p>" +
+        "<h3>The desk fills up</h3>" +
+        "<p>In a long session the desk gets full. When that happens, Claude Code clears it and leaves a short summary note in its place. This is called <b>compaction</b>.</p>" +
+        "<p>The note is short, so details get lost:</p>" +
+        "<ul><li>Decisions, and the reasons behind them</li><li>Fixes that already failed</li><li>Your exact words</li></ul>" +
+        "<p>Claude then fills the gaps with guesses. To you, it looks like Claude is making things up.</p>" +
+        "<h3>New chats remember some things, but not your progress</h3>" +
+        "<p>A new chat isn't a total blank. Claude Code reads your <code>CLAUDE.md</code>, keeps its own auto memory, and <code>/resume</code> reopens an old chat. Those hold lasting instructions and habits. What they don't reliably keep is where the project stands: what's done, what you decided recently, and the very next step.</p>" +
+        "<h3>Keep a notebook next to the desk</h3>" +
+        "<p>Pickup writes the important parts into <code>PICKUP.md</code> as you work. When the desk is cleared, or a new chat starts, Pickup puts the notebook straight back on the desk. Claude reads it and carries on.</p>"
+    },
+    start: {
+      meta: "2 min read",
+      title: "Getting started in five minutes",
+      html:
+        "<h3>1. Install it once</h3>" +
+        "<p>In Claude Code, type these two commands. Pickup then works in every project.</p>" +
+        "<pre>/plugin marketplace add salmanbiztopper-wq/pickup\n/plugin install pickup@pickup</pre>" +
+        "<p>Then restart Claude Code, or type <code>/reload-plugins</code>.</p>" +
+        "<h3>2. Open your project folder</h3>" +
+        "<p>Start a chat in the folder where your project lives, for example <code>H:\\my-bakery-site</code>. Pickup uses whichever folder the chat is open in. Each folder gets its own notebook, so projects never mix.</p>" +
+        "<h3>3. Work as usual</h3>" +
+        "<p>Ask Claude to build, fix or write things. After a few edits, <code>PICKUP.md</code> appears in the folder.</p>" +
+        "<h3>4. Come back any time</h3>" +
+        "<p>Open a new chat in the same folder. Claude starts by telling you where you left off.</p>"
+    },
+    inside: {
+      meta: "3 min read",
+      title: "What goes inside PICKUP.md",
+      html:
+        "<p>The notebook is one plain page. You can read it any time to see exactly what Claude knows.</p>" +
+        "<ul>" +
+        "<li><b>What we're building:</b> one or two sentences about the project.</li>" +
+        "<li><b>The plan:</b> a checklist. Finished steps get ticked off.</li>" +
+        "<li><b>Decisions (and why):</b> what you agreed on, and the reason.</li>" +
+        "<li><b>Next step:</b> the very next thing to do.</li>" +
+        "<li><b>Watch out:</b> traps and things that already failed.</li>" +
+        "<li><b>Waiting on you:</b> anything waiting on your answer.</li>" +
+        "</ul>" +
+        "<h3>The facts block</h3>" +
+        "<p>Between the <code>pickup:facts</code> markers, Pickup copies your latest requests word for word and lists the files changed recently. Leave that part alone.</p>" +
+        "<h3>Editing by hand</h3>" +
+        "<p>Everything else is yours to edit. If you change it, Claude follows your version.</p>"
+    }
+  };
+
+  // ---------- views ----------
+  function show(name) {
+    if (VIEWS.indexOf(name) < 0) name = "home";
+    document.querySelectorAll("[data-view]").forEach(function (v) { v.hidden = v.getAttribute("data-view") !== name; });
+    document.querySelectorAll(".tab").forEach(function (t) {
+      if (t.getAttribute("data-go") === name) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
+    });
+    if (name === "blog") closePost();
+  }
+  function go(name) {
+    try { if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name); } catch (e) {}
+    show(name);
+    window.scrollTo(0, 0);
+  }
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-go]");
+    if (!el) return;
+    e.preventDefault();
+    go(el.getAttribute("data-go"));
+  });
+  window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
+  show(location.hash.slice(1));
+
+  // ---------- blog ----------
+  var list = document.getElementById("blog-list");
+  var postBox = document.getElementById("blog-post");
+  function openPost(id) {
+    var p = POSTS[id]; if (!p) return;
+    postBox.innerHTML =
+      '<article class="slab article">' +
+      '<button class="btn ghost back" type="button" id="back-btn">← All posts</button>' +
+      '<span class="post-meta">' + p.meta + "</span><h2>" + p.title + "</h2>" + p.html +
+      "</article>";
+    list.hidden = true; postBox.hidden = false;
+    document.getElementById("back-btn").addEventListener("click", closePost);
+    window.scrollTo(0, 0);
+  }
+  function closePost() { postBox.hidden = true; list.hidden = false; }
+  document.querySelectorAll("[data-post]").forEach(function (b) {
+    b.addEventListener("click", function () { openPost(b.getAttribute("data-post")); });
+  });
+
+  // ---------- copy ----------
+  function copyText(text, btn, label) {
+    function done() { if (!btn) return; var o = btn.textContent; btn.textContent = label || "Copied"; btn.classList.add("done"); setTimeout(function () { btn.textContent = o; btn.classList.remove("done"); }, 1600); }
+    function fallback() {
+      var t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
+      try { document.execCommand("copy"); done(); } catch (e) {} t.remove();
+    }
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  }
+  document.querySelectorAll(".cmd .copy").forEach(function (b) {
+    b.addEventListener("click", function () { copyText(b.parentNode.querySelector("code").textContent, b); });
+  });
+  document.querySelectorAll("[data-copy]").forEach(function (b) {
+    b.addEventListener("click", function () { copyText(b.getAttribute("data-copy"), b, "Copied ✓"); });
+  });
+
+  // ---------- issue links ----------
+  function issueUrl(title, body, label) {
+    return REPO + "/issues/new?title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body) + (label ? "&labels=" + encodeURIComponent(label) : "");
+  }
+  document.getElementById("bug-link").href = issueUrl("[Bug] ",
+    "**What happened?**\n\n\n**What did you expect?**\n\n\n**Steps to make it happen again**\n1. \n2. \n\n**Your setup**\n- System (Mac / Windows / Linux): \n- Claude Code version: \n- Pickup version: 1.0.1\n", "bug");
+  document.getElementById("feat-link").href = issueUrl("[Feature] ",
+    "**What would you like Pickup to do?**\n\n\n**How would it help your work?**\n\n", "enhancement");
+
+  // ---------- contact form ----------
+  var form = document.getElementById("contact-form");
+  var nameEl = document.getElementById("c-name"), topicEl = document.getElementById("c-topic"), msgEl = document.getElementById("c-msg");
+  var send = document.getElementById("c-send"), status = document.getElementById("c-status");
+  function compose() {
+    var who = nameEl.value.trim() || "A Pickup user";
+    return { title: "[" + topicEl.value + "] from " + who, body: msgEl.value.trim() + "\n\n— " + who };
+  }
+  function refresh() { var c = compose(); send.href = issueUrl(c.title, c.body, ""); }
+  [nameEl, topicEl, msgEl].forEach(function (el) { el.addEventListener("input", refresh); el.addEventListener("change", refresh); });
+  refresh();
+  send.addEventListener("click", function (e) {
+    if (!msgEl.value.trim()) { e.preventDefault(); status.textContent = "Write a message first, then press Send."; msgEl.focus(); return; }
+    status.textContent = "Opened GitHub in a new tab. Press Submit there to send your message.";
+  });
+  document.getElementById("c-copy").addEventListener("click", function (e) {
+    if (!msgEl.value.trim()) { status.textContent = "Write a message first, then copy it."; msgEl.focus(); return; }
+    var c = compose(); copyText(c.title + "\n\n" + c.body, e.currentTarget);
+    status.textContent = "Message copied.";
+  });
+  form.addEventListener("submit", function (e) { e.preventDefault(); });
+})();
+</script>
+</body>
+</html>
