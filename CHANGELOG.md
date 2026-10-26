@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.1
+
+Wording and website. Pickup itself works the same as 1.0.0.
+
+- The README now says what a new chat does keep (`CLAUDE.md`, auto memory, `/resume`) and what Pickup adds: where the project stands.
+- The README's privacy section now says that Pickup itself sends nothing, and that the notebook is read into your Claude chat like any other file.
+- New website, linked at the top of the README.
+- The repo ignores a `PICKUP.md` at its top level, so Pickup can run in its own folder.
+
 ## 1.0.0 (2026-10-26)
 
 First release.

@@ -22,6 +22,10 @@ T=${TMPDIR:-/tmp}/pickup-tests.$$
 rm -rf "$T"
 mkdir -p "$T/bin" || exit 1
 trap 'rm -rf "$T"' EXIT INT TERM
+# Run from the temporary folder. A hook input without a project folder makes
+# the script fall back to the current folder, and that must never be a real
+# project (it would refresh that project's PICKUP.md).
+cd "$T" || exit 1
 
 # Use a specific awk if one was given, by putting it first on the PATH.
 if [ -n "${1:-}" ]; then

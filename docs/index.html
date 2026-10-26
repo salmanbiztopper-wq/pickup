@@ -413,7 +413,7 @@ footer a { text-decoration-thickness: 2px; text-underline-offset: 3px; }
       <div class="faq">
         <details><summary>What does Pickup write into my project?</summary><div class="a"><p>Only one file: <code>PICKUP.md</code>. Its raw activity log lives in the plugin's private data folder, never in your project.</p></div></details>
         <details><summary>Does it send my work anywhere?</summary><div class="a"><p>No. Pickup itself makes no network calls, and there are no accounts and no cloud. Its log stays on your computer. The notebook is read into your Claude chat, the same way Claude reads any other file in your project.</p></div></details>
-        <details><summary>Do I need Node or Python?</summary><div class="a"><p>No. It uses plain <code>sh</code> and <code>awk</code>, so it runs on Mac and Linux. On Windows it needs <a href="https://git-scm.com/downloads/win" target="_blank" rel="noopener">Git for Windows</a>, which most Claude Code users already have.</p></div></details>
+        <details><summary>Do I need Node or Python?</summary><div class="a"><p>No. It uses plain <code>sh</code> and <code>awk</code>, so it runs on Mac and Linux. On Windows it needs <a href="https://git-scm.com/downloads/win" target="_blank" rel="noopener">Git for Windows</a> (free).</p></div></details>
         <details><summary>Can I edit the notebook myself?</summary><div class="a"><p>Yes. If you edit <code>PICKUP.md</code> by hand, Claude follows your version. Leave the block between the <code>pickup:facts</code> markers alone, because Pickup fills that part.</p></div></details>
         <details><summary>How do I turn it off for one project?</summary><div class="a"><p>Create an empty file named <code>.pickup-off</code> in that project's folder. Pickup stays quiet there.</p></div></details>
         <details><summary>Can I change how often it saves?</summary><div class="a"><p>Yes. Set <code>PICKUP_SAVE_AFTER_EDITS</code> to the number of edits between reminders. The default is 6, and 0 turns the reminders off. Add it to your Claude Code settings file (<code>~/.claude/settings.json</code>) under <code>"env"</code>.</p></div></details>
@@ -466,43 +466,29 @@ footer a { text-decoration-thickness: 2px; text-underline-offset: 3px; }
       <div class="sec-head">
         <span class="eyebrow" style="background:var(--pink)">Contact</span>
         <h2>Say hello.</h2>
-        <p class="lead">Questions, ideas or feedback about Pickup. Messages go through the project's GitHub page, so you'll need a free GitHub account.</p>
+        <p class="lead">Questions, ideas, feedback or bugs: everything goes through Pickup's Issues page on GitHub. You'll need a free GitHub account to post there.</p>
       </div>
       <div class="contact-grid">
-        <form class="slab" id="contact-form" novalidate>
-          <div class="row2">
-            <div class="field"><label for="c-name">Your name</label><input id="c-name" name="name" autocomplete="name" placeholder="Rosa Martinez"></div>
-            <div class="field"><label for="c-topic">Topic</label>
-              <select id="c-topic" name="topic">
-                <option>General question</option>
-                <option>Feedback</option>
-                <option>Help getting started</option>
-                <option>Partnership</option>
-              </select>
-            </div>
-          </div>
-          <div class="field"><label for="c-msg">Message</label><textarea id="c-msg" name="message" placeholder="Hi! I started using Pickup on my bakery website and…"></textarea></div>
-          <div class="form-actions">
-            <a class="btn" id="c-send" href="#" target="_blank" rel="noopener">Send on GitHub ↗</a>
-            <button class="btn ghost" type="button" id="c-copy">Copy message</button>
-          </div>
-          <p class="status" id="c-status" role="status"></p>
-          <p class="hint">"Send on GitHub" opens a new message with your text filled in. Press Submit there to send it.</p>
-        </form>
+        <div class="slab report">
+          <span class="tag">Questions and feedback</span>
+          <h3>Open an issue on GitHub</h3>
+          <p>On the Issues page, click <b>New issue</b>, write your message, and press <b>Submit</b>. You can also read what others have asked.</p>
+          <a class="btn" href="https://github.com/salmanbiztopper-wq/pickup/issues" target="_blank" rel="noopener">Go to the Issues page ↗</a>
+        </div>
 
         <div class="side">
           <div class="slab report bug">
             <span class="tag">Report a bug</span>
             <h3>Something broke?</h3>
-            <p>Tell us what happened and what you expected. These help us fix it fast:</p>
-            <ul><li>Your system (Mac, Windows, Linux)</li><li>Your Claude Code version</li><li>Steps to make it happen again</li></ul>
-            <a class="btn" id="bug-link" href="#" target="_blank" rel="noopener">Report a bug ↗</a>
+            <p>Open an issue and tell us what happened and what you expected. These help us fix it fast:</p>
+            <ul><li>Your system (Mac, Windows, Linux)</li><li>Your Claude Code version</li><li>Your Pickup version</li><li>Steps to make it happen again</li></ul>
+            <a class="btn" href="https://github.com/salmanbiztopper-wq/pickup/issues" target="_blank" rel="noopener">Report a bug ↗</a>
           </div>
           <div class="slab report feat">
             <span class="tag">Request a feature</span>
             <h3>Got an idea?</h3>
-            <p>Describe what you'd like Pickup to do and why it would help your work.</p>
-            <a class="btn" id="feat-link" href="#" target="_blank" rel="noopener">Request a feature ↗</a>
+            <p>Open an issue and describe what you'd like Pickup to do and why it would help your work.</p>
+            <a class="btn" href="https://github.com/salmanbiztopper-wq/pickup/issues" target="_blank" rel="noopener">Request a feature ↗</a>
           </div>
           <div class="slab who">
             <h3>Made by Salman Islam</h3>
@@ -525,7 +511,6 @@ footer a { text-decoration-thickness: 2px; text-underline-offset: 3px; }
 
 <script>
 (function () {
-  var REPO = "https://github.com/salmanbiztopper-wq/pickup";
   var VIEWS = ["home", "blog", "contact"];
 
   var POSTS = {
@@ -633,40 +618,6 @@ footer a { text-decoration-thickness: 2px; text-underline-offset: 3px; }
   document.querySelectorAll(".cmd .copy").forEach(function (b) {
     b.addEventListener("click", function () { copyText(b.parentNode.querySelector("code").textContent, b); });
   });
-  document.querySelectorAll("[data-copy]").forEach(function (b) {
-    b.addEventListener("click", function () { copyText(b.getAttribute("data-copy"), b, "Copied ✓"); });
-  });
-
-  // ---------- issue links ----------
-  function issueUrl(title, body, label) {
-    return REPO + "/issues/new?title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body) + (label ? "&labels=" + encodeURIComponent(label) : "");
-  }
-  document.getElementById("bug-link").href = issueUrl("[Bug] ",
-    "**What happened?**\n\n\n**What did you expect?**\n\n\n**Steps to make it happen again**\n1. \n2. \n\n**Your setup**\n- System (Mac / Windows / Linux): \n- Claude Code version: \n- Pickup version: 1.0.1\n", "bug");
-  document.getElementById("feat-link").href = issueUrl("[Feature] ",
-    "**What would you like Pickup to do?**\n\n\n**How would it help your work?**\n\n", "enhancement");
-
-  // ---------- contact form ----------
-  var form = document.getElementById("contact-form");
-  var nameEl = document.getElementById("c-name"), topicEl = document.getElementById("c-topic"), msgEl = document.getElementById("c-msg");
-  var send = document.getElementById("c-send"), status = document.getElementById("c-status");
-  function compose() {
-    var who = nameEl.value.trim() || "A Pickup user";
-    return { title: "[" + topicEl.value + "] from " + who, body: msgEl.value.trim() + "\n\n— " + who };
-  }
-  function refresh() { var c = compose(); send.href = issueUrl(c.title, c.body, ""); }
-  [nameEl, topicEl, msgEl].forEach(function (el) { el.addEventListener("input", refresh); el.addEventListener("change", refresh); });
-  refresh();
-  send.addEventListener("click", function (e) {
-    if (!msgEl.value.trim()) { e.preventDefault(); status.textContent = "Write a message first, then press Send."; msgEl.focus(); return; }
-    status.textContent = "Opened GitHub in a new tab. Press Submit there to send your message.";
-  });
-  document.getElementById("c-copy").addEventListener("click", function (e) {
-    if (!msgEl.value.trim()) { status.textContent = "Write a message first, then copy it."; msgEl.focus(); return; }
-    var c = compose(); copyText(c.title + "\n\n" + c.body, e.currentTarget);
-    status.textContent = "Message copied.";
-  });
-  form.addEventListener("submit", function (e) { e.preventDefault(); });
 })();
 </script>
 </body>
