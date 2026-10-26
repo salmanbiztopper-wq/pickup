@@ -12,7 +12,7 @@ Think of Claude's memory as a desk. Everything from your conversation goes on th
 
 In a long session the desk fills up. When it is full, Claude Code clears it and leaves a short summary note in its place. This is called compaction. The note is short, so details get lost: decisions, the reasons behind them, what already failed, and your exact words.
 
-Claude then fills the gaps with guesses. To you, it looks like Claude is making things up, or forgetting what you agreed on. And when you start a brand-new session, the desk is empty. Claude starts with no memory of your project at all.
+Claude then fills the gaps with guesses. To you, it looks like Claude is making things up, or forgetting what you agreed on. A brand-new session starts with a clean desk too. Claude Code still has your `CLAUDE.md`, its auto memory, and `/resume` to reopen an old chat. What it doesn't reliably keep is where the project stands: what's done, what you decided recently, and the very next step.
 
 Pickup keeps a notebook next to the desk. When the desk gets cleared, or a new session starts, the notebook goes straight back on the desk.
 
