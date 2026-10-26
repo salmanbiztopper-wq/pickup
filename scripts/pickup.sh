@@ -138,6 +138,24 @@ function json_u(h,    i, d, n) {
   return sprintf("%c%c%c", 224 + int(n / 4096), 128 + int(n / 64) % 64, 128 + n % 64)
 }
 
+# Take out text the app adds around a message, so only the words the user
+# typed or pasted are kept:
+# - hidden notes, <system-reminder> ... </system-reminder>, removed whole
+#   (if the closing tag was cut off, everything from the opening tag goes)
+# - the wrapper around pasted text, <pasted_content ...> and
+#   </pasted_content ...>: the tags go, the pasted words stay
+function strip_app_text(s,    a, b, tag_open, tag_end) {
+  tag_open = "<system-reminder>"
+  tag_end = "</system-reminder>"
+  while ((a = index(s, tag_open)) > 0) {
+    b = index(substr(s, a), tag_end)
+    if (b == 0) { s = substr(s, 1, a - 1); break }
+    s = substr(s, 1, a - 1) " " substr(s, a + b - 1 + length(tag_end))
+  }
+  gsub(/<\/?pasted_content[^>]*>/, " ", s)
+  return s
+}
+
 # Squeeze all runs of spaces, tabs and line breaks into single spaces.
 function squash(s) {
   gsub(/[ \t\r\n]+/, " ", s)
@@ -249,9 +267,11 @@ END {
     } else kind = "outside"
   }
 
-  # The request: one line, secrets hidden, cut to 1000 bytes. It is cut
-  # again, shorter, when it goes into the notebook.
-  pr = cut_utf8(hide_tokens(squash(json_get(doc, "prompt", 4000))), 1000)
+  # The request: app-added text taken out, one line, secrets hidden, cut to
+  # 1000 bytes. It is cut again, shorter, when it goes into the notebook.
+  # Up to 20000 bytes are read, so a long hidden note at the start can
+  # never push the real words out of reach.
+  pr = cut_utf8(hide_tokens(squash(strip_app_text(json_get(doc, "prompt", 20000)))), 1000)
 
   print root
   print nroot
@@ -356,7 +376,9 @@ END {
     if (f[2] == "PROMPT" && np < maxreq) {
       t = f[3]
       for (j = 4; j <= n; j++) t = t " " f[j]
-      t = cut_utf8(hide_tokens(t), reqchars)
+      # strip_app_text again, for lines logged by version 1.0.0; a request
+      # with nothing left is skipped just below.
+      t = cut_utf8(hide_tokens(squash(strip_app_text(t))), reqchars)
       gsub(/pickup:facts:/, "pickup-facts-", t)
       if (t == "" || (t in seenp)) continue
       seenp[t] = 1
