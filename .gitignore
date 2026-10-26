@@ -1,3 +1,7 @@
 # Private build notes. These stay on Salman's computer and are never published.
 pickup-build-brief.md
 BUILD-PROGRESS.md
+
+# Pickup's own notebook for this folder (Pickup runs here too). The leading
+# slash means only the top-level file: templates/PICKUP.md is still published.
+/PICKUP.md
