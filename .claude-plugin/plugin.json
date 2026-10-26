@@ -1,0 +1,14 @@
+{
+  "name": "pickup",
+  "displayName": "Pickup",
+  "version": "1.0.0",
+  "description": "Claude never loses its place. Pickup keeps a plain-English project notebook (PICKUP.md) up to date on its own, and loads it back after compaction or in a new session.",
+  "author": {
+    "name": "Salman Islam",
+    "url": "https://github.com/salmanbiztopper-wq"
+  },
+  "homepage": "https://github.com/salmanbiztopper-wq/pickup",
+  "repository": "https://github.com/salmanbiztopper-wq/pickup",
+  "license": "MIT",
+  "keywords": ["memory", "context", "handoff", "compaction", "notebook", "vibecoding"]
+}

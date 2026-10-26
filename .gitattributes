@@ -1,0 +1,3 @@
+# Keep shell scripts with Unix line endings, even when cloned on Windows.
+# Windows line endings (CRLF) would break the script.
+*.sh text eol=lf

@@ -1,0 +1,15 @@
+{
+  "name": "pickup",
+  "description": "Pickup: Claude never loses its place.",
+  "owner": {
+    "name": "Salman Islam",
+    "url": "https://github.com/salmanbiztopper-wq"
+  },
+  "plugins": [
+    {
+      "name": "pickup",
+      "source": "./",
+      "description": "Keeps a plain-English project notebook (PICKUP.md) up to date on its own, and loads it back after compaction or in a new session."
+    }
+  ]
+}
