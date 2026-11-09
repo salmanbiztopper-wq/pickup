@@ -3,15 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
 <title>Pickup for Claude Code</title>
 <meta name="description" content="Pickup is a Claude Code plugin that keeps a plain-English project notebook, PICKUP.md, and loads it back after compaction and in every new chat.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;800&display=swap">
 <style>
-/* Layout: neon-brutalist slabs. Thick ink borders, hard offset shadows, flat neon fills, one tilted notebook card as the hero object. */
+/* Layout: neon-brutalist slabs. Thick ink borders, hard offset shadows, flat neon fills, one tilted notebook card as the hero object.
+   Always the white version: no dark mode, even when the device is set to dark. */
 :root {
-  --bg: #f1efff;
+  color-scheme: light;
+  --bg: #ffffff;
   --paper: #ffffff;
   --ink: #0b0a12;
   --muted: #4b4562;
@@ -20,7 +23,7 @@
   --cyan: #38f2ff;
   --violet: #8a6bff;
   --on-neon: #0b0a12;
-  --grid: rgba(11, 10, 18, .07);
+  --grid: rgba(11, 10, 18, .05);
   --f-display: "Archivo", "Arial Black", Impact, sans-serif;
   --f-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
@@ -28,17 +31,6 @@
   --sh: 6px 6px 0 var(--ink);
   --sh-sm: 4px 4px 0 var(--ink);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0e0c17; --paper: #191626; --ink: #f1efff; --muted: #b3acd0;
-    --grid: rgba(241, 239, 255, .06); color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0e0c17; --paper: #191626; --ink: #f1efff; --muted: #b3acd0;
-  --grid: rgba(241, 239, 255, .06); color-scheme: dark;
-}
-
 * { box-sizing: border-box; }
 body {
   background: var(--bg);
