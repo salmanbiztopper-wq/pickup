@@ -1,7 +1,7 @@
 {
   "name": "pickup",
   "displayName": "Pickup",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Claude never loses its place. Pickup keeps a plain-English project notebook (PICKUP.md) up to date on its own, and loads it back after compaction or in a new session.",
   "author": {
     "name": "Salman Islam",

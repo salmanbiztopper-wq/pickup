@@ -22,6 +22,10 @@ T=${TMPDIR:-/tmp}/pickup-tests.$$
 rm -rf "$T"
 mkdir -p "$T/bin" || exit 1
 trap 'rm -rf "$T"' EXIT INT TERM
+# Run from the temporary folder. A hook input without a project folder makes
+# the script fall back to the current folder, and that must never be a real
+# project (it would refresh that project's PICKUP.md).
+cd "$T" || exit 1
 
 # Use a specific awk if one was given, by putting it first on the PATH.
 if [ -n "${1:-}" ]; then
@@ -324,7 +328,37 @@ check "long log is trimmed (now $((N + 0)) lines)" [ "$N" -le 520 ]
 check "trimming keeps the session record list" file_has "$LOG" "TRANSCRIPT${TAB}$T/sessions/keep.jsonl"
 check "trimming keeps the newest lines" file_has "$LOG" "file1200.txt"
 
-echo "13. Always exit 0, even with bad input"
+echo "13. Text the app adds around a message is left out"
+new_project apptext
+Q2="${BS}\""
+say "<pasted_content id=${Q2}40d7${Q2}>${BS}nmake the logo bigger${BS}n</pasted_content id=${Q2}40d7${Q2}>"
+say "<system-reminder>${BS}nThe app moved this session to another folder.${BS}n</system-reminder>${BS}nnow fix the footer"
+say "<system-reminder>only a hidden note, nothing typed</system-reminder>"
+say "<system-reminder>a hidden note whose end was cut off"
+say "keep my own <b>tags</b> please"
+for f in a b c; do edit "$f.txt"; done
+stop
+NB=$P/PICKUP.md
+ALOG=$(log_of apptext)
+check "pasted words are kept" file_has "$NB" '"make the logo bigger"'
+check "pasted-text wrapper is removed" file_lacks "$NB" "pasted_content"
+check "words typed after a hidden note are kept" file_has "$NB" '"now fix the footer"'
+check "hidden note text is removed" file_lacks "$NB" "moved this session"
+check "system-reminder tags are removed" file_lacks "$NB" "system-reminder"
+check "a message that was only a hidden note is skipped" file_lacks "$ALOG" "only a hidden note"
+check "a hidden note with its end cut off is removed" file_lacks "$ALOG" "end was cut off"
+check "the user's own tags are kept" file_has "$NB" '"keep my own <b>tags</b> please"'
+N=$(grep -c "^[0-9]\. \"" "$NB")
+check "exactly 3 requests listed (the 2 empty ones skipped)" [ "$N" -eq 3 ]
+# A line logged by version 1.0.0 still has the wrapper; the facts are cleaned anyway.
+printf '2026-10-26 09:00:00\tPROMPT\t<pasted_content id="x"> an old pasted request </pasted_content id="x">\n' >"$ALOG.old"
+cat "$ALOG" >>"$ALOG.old" && mv "$ALOG.old" "$ALOG"
+printf '2026-10-26 09:00:01\tPROMPT\t<system-reminder> old hidden note </system-reminder>\n' >>"$ALOG"
+hook session-end "{\"cwd\":\"$P\",\"reason\":\"other\"}"
+check "old logged wrapper is cleaned in the facts" file_has "$NB" '"an old pasted request"'
+check "old logged hidden-note-only request is skipped" file_lacks "$NB" "old hidden note"
+
+echo "14. Always exit 0, even with bad input"
 printf 'this is not json' | "$RUNSH" "$SCRIPT" stop >/dev/null 2>&1
 check "garbage input" [ $? -eq 0 ]
 printf '' | "$RUNSH" "$SCRIPT" session-start >/dev/null 2>&1

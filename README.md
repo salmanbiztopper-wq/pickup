@@ -1,5 +1,7 @@
 # Pickup
 
+**Website:** [salmanbiztopper-wq.github.io/pickup](https://salmanbiztopper-wq.github.io/pickup/)
+
 **Install once, keep working as usual, and Claude never loses its place.**
 
 Pickup is a plugin for Claude Code. It keeps one plain-English page about your project, called `PICKUP.md`, and makes sure Claude reads it whenever it might have forgotten something. You never have to remember to save. If you ever want to check what Claude knows, the whole story is on one page.
@@ -12,7 +14,7 @@ Think of Claude's memory as a desk. Everything from your conversation goes on th
 
 In a long session the desk fills up. When it is full, Claude Code clears it and leaves a short summary note in its place. This is called compaction. The note is short, so details get lost: decisions, the reasons behind them, what already failed, and your exact words.
 
-Claude then fills the gaps with guesses. To you, it looks like Claude is making things up, or forgetting what you agreed on. And when you start a brand-new session, the desk is empty. Claude starts with no memory of your project at all.
+Claude then fills the gaps with guesses. To you, it looks like Claude is making things up, or forgetting what you agreed on. A brand-new session starts with a clean desk too. Claude Code still has your `CLAUDE.md`, its auto memory, and `/resume` to reopen an old chat. What it doesn't reliably keep is where the project stands: what's done, what you decided recently, and the very next step.
 
 Pickup keeps a notebook next to the desk. When the desk gets cleared, or a new session starts, the notebook goes straight back on the desk.
 
@@ -118,7 +120,7 @@ Either way, the new session starts from the notebook with a clean desk.
 - **The notebook** is `PICKUP.md` in your project folder. You can see it, edit it, and share it like any other file.
 - **The activity record** is a private log of your requests and the files that changed. It's kept in Claude Code's own plugin folder on your computer (`~/.claude/plugins/data/`), never in your project folder. It also notes where Claude Code keeps each session's chat history, for the coming Recall feature.
 - **Only a cleaned-up copy goes into the notebook.** Anything that looks like a password, key or token is replaced with `[hidden]`, and each request is cut to a short length.
-- **Nothing leaves your computer.** There are no accounts and no cloud.
+- **Pickup itself sends nothing anywhere.** There are no accounts and no cloud. The notebook is read into your Claude chat, the same way Claude reads any other file in your project.
 - **If you share your project** (for example on GitHub), `PICKUP.md` goes with it, including your latest requests. Have a quick look at it before sharing. If you don't want `PICKUP.md` shared at all, ask Claude to add it to your `.gitignore` file.
 - **If you uninstall Pickup,** Claude Code deletes the private log. Your `PICKUP.md` files stay where they are.
 
