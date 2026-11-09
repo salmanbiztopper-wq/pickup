@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.1
+## 1.0.1 (2026-11-09)
 
 A small fix, plus wording and a website.
 
